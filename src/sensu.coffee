@@ -6,7 +6,6 @@
 #
 # Configuration:
 #   HUBOT_SENSU_API_URL - URL for the sensu api service.  http://sensu.yourdomain.com:4567
-#   HUBOT_SENSU_DOMAIN - Domain to force on all clients.  Not used if blank/unset
 #   HUBOT_SENSU_API_USERNAME - Username for the sensu api basic auth. Not used if blank/unset
 #   HUBOT_SENSU_API_PASSWORD - Password for the sensu api basic auth. Not used if blank/unset
 #
@@ -115,7 +114,7 @@ module.exports = (robot) ->
     # msg.match[4] = units (required if duration)
 
     validateVars
-    client = addClientDomain(msg.match[1])
+    client = msg.match[1]
 
     if msg.match[2]
       path = client + '/' + msg.match[2]
@@ -170,10 +169,6 @@ module.exports = (robot) ->
     unless stash.match /^silence\//
       stash = 'silence/' + stash
 
-    # If it is only a hostname, verify domain name
-    unless stash.match /^silence\/(.*)\//
-      stash = addClientDomain(stash)
-
     credential = createCredential()
     req = robot.http(config.sensu_api + '/stashes')
     if credential
@@ -216,7 +211,7 @@ module.exports = (robot) ->
 
   robot.respond /sensu client (.*)( history)/i, (msg) ->
     validateVars
-    client = addClientDomain(msg.match[1])
+    client = msg.match[1]
 
     credential = createCredential()
     req = robot.http(config.sensu_api + '/clients/' + client + '/history')
@@ -247,7 +242,7 @@ module.exports = (robot) ->
 
   robot.respond /sensu client (.*)/i, (msg) ->
     validateVars
-    client = addClientDomain(msg.match[1])
+    client = msg.match[1]
 
     credential = createCredential()
     req = robot.http(config.sensu_api + '/clients/' + client)
@@ -269,7 +264,7 @@ module.exports = (robot) ->
 
   robot.respond /(?:sensu)? remove client (.*)/i, (msg) ->
     validateVars
-    client= addClientDomain(msg.match[1])
+    client= msg.match[1]
 
     credential = createCredential()
     req = robot.http(config.sensu_api + '/clients/' + client)
@@ -293,7 +288,7 @@ module.exports = (robot) ->
   robot.respond /sensu events(?: for (.*))?/i, (msg) ->
     validateVars
     if msg.match[1]
-      client = '/' + addClientDomain(msg.match[1])
+      client = '/' + msg.match[1]
     else
       client = ''
 
@@ -323,7 +318,7 @@ module.exports = (robot) ->
 
   robot.respond /(?:sensu)? resolve event (.*)(?:\/)(.*)/i, (msg) ->
     validateVars
-    client = addClientDomain(msg.match[1])
+    client = msg.match[1]
 
     data = {}
     data['client'] = client
@@ -345,8 +340,3 @@ module.exports = (robot) ->
         else
           msg.send "API returned an error resolving #{msg.match[1]}/#{msg.match[2]} (#{res.statusCode}: #{res.body})"
 
-addClientDomain = (client) ->
-  domainMatch = new RegExp("\.#{process.env.HUBOT_SENSU_DOMAIN}$", 'i')
-  unless domainMatch.test(client)
-    client = client + '.' + process.env.HUBOT_SENSU_DOMAIN
-  client
